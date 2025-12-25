@@ -17,6 +17,8 @@ import threading
 import queue
 import time
 import os
+import contextlib
+import io
 
 
 class VoiceBackend(Enum):
@@ -155,6 +157,7 @@ class VoiceConfig:
     stt_backend: VoiceBackend = VoiceBackend.WHISPER
     tts_backend: VoiceBackend = VoiceBackend.EDGE_TTS
     language: str = "pl"
+    debug: bool = False
     sample_rate: int = 16000
     wake_word: Optional[str] = None  # np. "hej asystent"
     voice_name: Optional[str] = None
@@ -239,9 +242,31 @@ class WhisperSTT(STTProvider):
                 import whisper
                 # Użyj mniejszego modelu dla szybkości
                 model_name = os.getenv("WHISPER_MODEL", "base")
+                if getattr(self.config, "debug", False):
+                    print(f"[text2dsl][voice][debug] stt.whisper.load_model {{'model': '{model_name}'}}")
                 self.model = whisper.load_model(model_name)
             except ImportError:
                 raise ImportError("Zainstaluj whisper: pip install openai-whisper")
+
+    def _check_streaming_deps(self):
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                import pyaudio  # noqa: F401
+            import numpy  # noqa: F401
+        except Exception as e:
+            msg = str(e)
+            hint = ""
+            if "GLIBCXX_" in msg or "libstdc++" in msg:
+                hint = (
+                    "\nWygląda na konflikt libstdc++ (np. Conda vs system). "
+                    "Spróbuj uruchomić w czystym venv (bez aktywnego conda 'base') "
+                    "albo zaktualizować libstdc++ w środowisku." 
+                )
+            raise ImportError(
+                "PyAudio nie działa w tym środowisku. "
+                "Wymagane jest działające pyaudio + portaudio. "
+                f"Szczegóły: {msg}{hint}"
+            )
     
     def transcribe(self, audio_data: bytes) -> TranscriptionResult:
         """Transkrybuje audio z wykrywaniem języka"""
@@ -279,6 +304,9 @@ class WhisperSTT(STTProvider):
     
     def start_streaming(self, callback: Callable[[TranscriptionResult], None]):
         """Rozpoczyna transkrypcję strumieniową"""
+        self._check_streaming_deps()
+        if getattr(self.config, "debug", False):
+            print("[text2dsl][voice][debug] stt.streaming.start {}")
         self._streaming = True
         self._stream_thread = threading.Thread(
             target=self._stream_loop,
@@ -289,6 +317,8 @@ class WhisperSTT(STTProvider):
     
     def stop_streaming(self):
         """Zatrzymuje transkrypcję strumieniową"""
+        if getattr(self.config, "debug", False):
+            print("[text2dsl][voice][debug] stt.streaming.stop {}")
         self._streaming = False
         if self._stream_thread:
             self._stream_thread.join(timeout=2.0)
@@ -337,8 +367,13 @@ class WhisperSTT(STTProvider):
             stream.close()
             p.terminate()
             
-        except ImportError:
-            raise ImportError("Zainstaluj pyaudio: pip install pyaudio")
+        except Exception as e:
+            if getattr(self.config, "debug", False):
+                print(f"[text2dsl][voice][debug] stt.streaming.error {{'error': '{str(e)}'}}")
+            else:
+                print(f"Błąd audio/STT: {e}")
+            self._streaming = False
+            return
 
 
 class Pyttsx3TTS(TTSProvider):
@@ -553,6 +588,10 @@ class VoiceLayer:
     
     def _init_providers(self):
         """Inicjalizuje providery STT i TTS"""
+        if self.config.debug:
+            print(
+                f"[text2dsl][voice][debug] init {{'stt_backend': '{self.config.stt_backend.name}', 'tts_backend': '{self.config.tts_backend.name}', 'lang': '{self.config.language}'}}"
+            )
         # STT
         if self.config.stt_backend == VoiceBackend.WHISPER:
             self.stt = WhisperSTT(self.config)
@@ -585,6 +624,9 @@ class VoiceLayer:
         # Zaktualizuj STT
         if hasattr(self.stt, 'lang_config'):
             self.stt.lang_config = self.lang_config
+
+        if self.config.debug:
+            print(f"[text2dsl][voice][debug] set_language {{'lang': '{lang_code}', 'gender': '{gender}'}}")
     
     def get_message(self, key: str) -> str:
         """Pobiera przetłumaczony komunikat systemowy"""
@@ -646,18 +688,36 @@ class VoiceLayer:
         """
         if not self.stt:
             return
-        
-        self._listening = True
+
         self._on_speech = callback
         
         def internal_callback(result: TranscriptionResult):
+            if self.config.debug:
+                print(
+                    f"[text2dsl][voice][debug] stt.result {{'text': '{result.text}', 'lang': '{result.language}', 'confidence': {result.confidence}}}"
+                )
             if self._on_speech and result.text:
                 self._on_speech(result.text)
-        
-        self.stt.start_streaming(internal_callback)
+
+
+        try:
+            self.stt.start_streaming(internal_callback)
+        except ImportError as e:
+            self._listening = False
+            if self.config.debug:
+                print(f"[text2dsl][voice][debug] listening.error {{'error': '{str(e)}'}}")
+            else:
+                print(f"Błąd voice/STT: {e}")
+            return
+
+        self._listening = True
+        if self.config.debug:
+            print("[text2dsl][voice][debug] listening.start {}")
     
     def stop_listening(self):
         """Zatrzymuje nasłuchiwanie"""
+        if self.config.debug:
+            print("[text2dsl][voice][debug] listening.stop {}")
         self._listening = False
         if self.stt:
             self.stt.stop_streaming()

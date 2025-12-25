@@ -276,13 +276,19 @@ class Text2Git:
     def execute_natural(self, natural_command: str) -> GitResult:
         """Wykonuje naturalne polecenie Git"""
         natural_lower = natural_command.lower().strip()
+
+        filler_args = {
+            "zmiany",
+            "changes",
+            "änderungen",
+        }
         
         # Sprawdź proste mapowania
         for key, cmd in self.NATURAL_COMMANDS.items():
             if natural_lower == key or natural_lower.startswith(key + " "):
                 args = cmd.replace("git ", "").split()
                 rest = natural_lower.replace(key, "").strip()
-                if rest:
+                if rest and rest not in filler_args:
                     args.append(rest)
                 return self._run_git(*args)
         

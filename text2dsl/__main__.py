@@ -74,7 +74,13 @@ Obsługiwane języki:
         action="store_true",
         help="Ciche wyjście"
     )
-    
+
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Pokaż logi debug (parsowanie, routing, wykonywane komendy)"
+    )
+
     parser.add_argument(
         "--no-suggestions",
         action="store_true",
@@ -160,6 +166,7 @@ Obsługiwane języki:
     voice_config = VoiceConfig(
         language=args.lang,
         voice_name=lang_config.edge_tts_voice,
+        debug=args.verbose,
     )
     
     # Konfiguracja orchestratora
@@ -167,7 +174,8 @@ Obsługiwane języki:
         working_dir=args.directory,
         voice_enabled=args.voice,
         voice_config=voice_config,
-        verbose=not args.quiet,
+        verbose=args.verbose,
+        quiet=args.quiet,
         language=args.lang
     )
     

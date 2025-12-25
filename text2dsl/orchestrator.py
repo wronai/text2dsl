@@ -35,6 +35,7 @@ class OrchestratorConfig:
     voice_config: Optional[VoiceConfig] = None
     auto_confirm: bool = False  # Automatycznie potwierdza akcje
     verbose: bool = True
+    quiet: bool = False
     language: str = "pl"
 
 
@@ -114,16 +115,32 @@ class Text2DSLOrchestrator:
         """
         # Parsuj polecenie
         command = self.parser.parse(input_text)
+
+        self._debug(
+            "parsed",
+            {
+                "input": input_text,
+                "type": command.type.name,
+                "action": command.action,
+                "target": command.target,
+                "args": command.args,
+                "confidence": command.confidence,
+                "lang": getattr(command, "detected_language", None),
+            },
+        )
         
         # Obsłuż komendy kontekstowe
         if command.type == CommandType.CONTEXT:
+            self._debug("route", {"to": "context", "action": command.action})
             return self._handle_context_command(command)
         
         # Obsłuż zapytania
         if command.type == CommandType.QUERY:
+            self._debug("route", {"to": "query", "action": command.action})
             return self._handle_query(command)
         
         # Routuj do odpowiedniej warstwy
+        self._debug("route", {"to": command.type.name})
         response = self._route_and_execute(command)
         
         # Aktualizuj kontekst
@@ -136,6 +153,12 @@ class Text2DSLOrchestrator:
         )
         
         return response
+
+    def _debug(self, event: str, data: Optional[Dict[str, Any]] = None):
+        if not self.config.verbose:
+            return
+        payload = "" if not data else f" {data}"
+        print(f"[text2dsl][debug] {event}{payload}")
     
     def _handle_context_command(self, command: ParsedCommand) -> ExecutionResponse:
         """Obsługuje komendy kontekstowe (dalej, cofnij, powtórz)"""
@@ -281,15 +304,29 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
             )
         
         # Rozwiąż naturalną komendę na cel
+        raw = (command.raw_input or "").strip()
+        raw_lower = raw.lower()
         target = command.target
-        if command.action and command.action != "inferred":
+
+        if raw_lower.startswith("make"):
+            parts = raw.split()
+            if len(parts) >= 2:
+                target = parts[1]
+        elif command.action and command.action != "inferred":
             target = self.make.resolve_natural_command(command.action)
         
         if target is None and command.args:
             target = self.make.resolve_natural_command(command.args[0])
         
+        self._debug("exec.make", {"target": target})
+
         # Wykonaj
         result = self.make.run(target)
+
+        self._debug(
+            "exec.make.result",
+            {"success": result.success, "return_code": result.return_code, "target": result.target},
+        )
         
         self.context.add_execution_result(ExecutionResult(
             success=result.success,
@@ -319,8 +356,15 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
             shell_cmd = " ".join(command.args)
         else:
             shell_cmd = self.shell.translate_to_bash(command.raw_input)
+
+        self._debug("exec.shell", {"command": shell_cmd})
         
         result = self.shell.run(shell_cmd)
+
+        self._debug(
+            "exec.shell.result",
+            {"success": result.success, "return_code": result.return_code, "command": result.command},
+        )
         
         self.context.add_execution_result(ExecutionResult(
             success=result.success,
@@ -357,7 +401,13 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         elif command.action == "commit" and command.target:
             natural_cmd = f"commit {command.target}"
         
+        self._debug("exec.git", {"natural": natural_cmd})
         result = self.git.execute_natural(natural_cmd)
+
+        self._debug(
+            "exec.git.result",
+            {"success": result.success, "operation": result.operation, "error": result.error[:200]},
+        )
         
         if result.success:
             message = result.output[:500] if result.output else "OK"
@@ -378,7 +428,13 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
                 message="Docker nie jest zainstalowany lub niedostępny."
             )
         
+        self._debug("exec.docker", {"natural": command.raw_input})
         result = self.docker.execute_natural(command.raw_input)
+
+        self._debug(
+            "exec.docker.result",
+            {"success": result.success, "operation": result.operation, "error": result.error[:200]},
+        )
         
         if result.success:
             message = result.output[:500] if result.output else "OK"
@@ -393,7 +449,13 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
     
     def _execute_python(self, command: ParsedCommand) -> ExecutionResponse:
         """Wykonuje polecenie Python"""
+        self._debug("exec.python", {"natural": command.raw_input})
         result = self.python.execute_natural(command.raw_input)
+
+        self._debug(
+            "exec.python.result",
+            {"success": result.success, "operation": result.operation, "error": result.error[:200]},
+        )
         
         if result.success:
             message = result.output[:500] if result.output else "OK"
@@ -412,7 +474,7 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         """Wymawia tekst"""
         if self.voice:
             self.voice.speak(text)
-        if self.config.verbose:
+        if not self.config.quiet:
             print(f"🔊 {text}")
     
     def listen(self, timeout: float = 5.0) -> Optional[str]:
@@ -426,6 +488,8 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         if not self.voice:
             print("Voice nie jest dostępny.")
             return
+
+        self._debug("voice.session.start", {"lang": self.config.language})
         
         self._running = True
         self.speak("Witaj! Jak mogę pomóc?")
@@ -446,8 +510,19 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
                 print("\n" + self.suggestions.format_suggestions_for_display(
                     response.suggestions
                 ))
-        
-        self.voice.start_listening(on_speech)
+
+        try:
+            self.voice.start_listening(on_speech)
+        except Exception as e:
+            self._debug("voice.session.error", {"error": str(e)})
+            print(f"Błąd voice: {e}")
+            self.stop_voice_session()
+            return
+
+        if not self.voice.is_listening:
+            self._debug("voice.session.listen_failed")
+            self._running = False
+            return
         
         try:
             while self._running:
@@ -457,12 +532,35 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
     
     def stop_voice_session(self):
         """Zatrzymuje sesję głosową"""
+        self._debug("voice.session.stop")
         self._running = False
         if self.voice:
             self.voice.stop_listening()
         self.speak("Do widzenia!")
     
     # ==================== Interactive Mode ====================
+
+    def _select_suggestion(self, user_input: str, suggestions: List[Suggestion]) -> Optional[Suggestion]:
+        cleaned = user_input.strip()
+        if not cleaned:
+            return None
+
+        if cleaned.startswith("[") and cleaned.endswith("]"):
+            cleaned = cleaned[1:-1].strip()
+
+        if cleaned.endswith("."):
+            cleaned = cleaned[:-1].strip()
+
+        if cleaned.isdigit():
+            idx = int(cleaned)
+            if 1 <= idx <= len(suggestions):
+                return suggestions[idx - 1]
+
+        cleaned_lower = cleaned.lower()
+        for s in suggestions:
+            if s.shortcut and cleaned_lower == s.shortcut.lower():
+                return s
+        return None
     
     def interactive(self):
         """Tryb interaktywny (tekstowy)"""
@@ -478,8 +576,10 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         suggestions = self.suggestions.get_suggestions(
             context=self.context.to_dict()
         )
+        displayed_suggestions: List[Suggestion] = []
         if suggestions:
-            print(self.suggestions.format_suggestions_for_display(suggestions))
+            displayed_suggestions = suggestions[:5]
+            print(self.suggestions.format_suggestions_for_display(displayed_suggestions))
         
         while True:
             try:
@@ -487,6 +587,10 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
                 
                 if not user_input:
                     continue
+
+                selected = self._select_suggestion(user_input, displayed_suggestions)
+                if selected:
+                    user_input = selected.command
                 
                 if user_input.lower() in ["wyjdź", "exit", "quit", "q"]:
                     print("Do widzenia!")
@@ -499,9 +603,10 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
                 
                 # Wyświetl sugestie
                 if response.suggestions:
-                    print(self.suggestions.format_suggestions_for_display(
-                        response.suggestions[:3]
-                    ))
+                    displayed_suggestions = response.suggestions[:3]
+                    print(self.suggestions.format_suggestions_for_display(displayed_suggestions))
+                else:
+                    displayed_suggestions = []
                 
                 # Obsłuż potwierdzenie
                 if response.needs_confirmation:

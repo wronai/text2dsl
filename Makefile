@@ -1,4 +1,4 @@
-.PHONY: all build test clean install lint format docs run
+.PHONY: all build test clean install lint format docs run dist upload upload-test publish publish-test
 
 # Default target
 all: build test
@@ -63,6 +63,14 @@ dist:
 # Upload to PyPI (test)
 upload-test:
 	python -m twine upload --repository testpypi dist/*
+
+# Upload to PyPI
+upload:
+	python -m twine upload dist/*
+
+publish-test: dist upload-test
+
+publish: dist upload
 
 # Show help
 help:

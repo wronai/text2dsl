@@ -169,6 +169,7 @@ class TestText2Git:
         from text2dsl.layers.text2git import Text2Git
         
         # Utwórz tymczasowe repo git
+        self._original_cwd = os.getcwd()
         self.temp_dir = tempfile.mkdtemp()
         os.chdir(self.temp_dir)
         os.system("git init")
@@ -184,6 +185,7 @@ class TestText2Git:
     
     def teardown_method(self):
         import shutil
+        os.chdir(self._original_cwd)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
     
     def test_is_repo(self):
@@ -228,6 +230,11 @@ class TestText2Git:
         """Test naturalnego polecenia status"""
         result = self.git.execute_natural("status")
         assert result.success
+
+    def test_execute_natural_push_changes_filler(self):
+        """Test że 'wypchnij zmiany' nie przekazuje 'zmiany' jako argumentu do git push"""
+        result = self.git.execute_natural("wypchnij zmiany")
+        assert result.operation == "push"
     
     def test_get_suggestions(self):
         """Test sugestii"""
@@ -386,6 +393,44 @@ class TestContextManager:
         
         # Wróć
         self.context.change_directory(str(original))
+
+
+class TestOrchestratorSuggestionSelection:
+    def setup_method(self):
+        from text2dsl.orchestrator import Text2DSLOrchestrator, OrchestratorConfig
+
+        self.temp_dir = tempfile.mkdtemp()
+        self.orchestrator = Text2DSLOrchestrator(
+            OrchestratorConfig(working_dir=self.temp_dir, voice_enabled=False, verbose=False)
+        )
+
+    def teardown_method(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_select_suggestion_by_number(self):
+        from text2dsl.core.suggestion_engine import Suggestion
+
+        suggestions = [
+            Suggestion(text="a", command="echo a", category="shell"),
+            Suggestion(text="b", command="echo b", category="shell"),
+            Suggestion(text="c", command="echo c", category="shell"),
+        ]
+
+        assert self.orchestrator._select_suggestion("1", suggestions) == suggestions[0]
+        assert self.orchestrator._select_suggestion("[2]", suggestions) == suggestions[1]
+        assert self.orchestrator._select_suggestion("3.", suggestions) == suggestions[2]
+        assert self.orchestrator._select_suggestion("4", suggestions) is None
+
+    def test_select_suggestion_by_shortcut(self):
+        from text2dsl.core.suggestion_engine import Suggestion
+
+        suggestions = [
+            Suggestion(text="a", command="echo a", category="shell", shortcut="s"),
+        ]
+
+        assert self.orchestrator._select_suggestion("s", suggestions) == suggestions[0]
+        assert self.orchestrator._select_suggestion("[s]", suggestions) == suggestions[0]
 
 
 if __name__ == "__main__":

@@ -103,6 +103,7 @@ MULTILANG_ACTION_PATTERNS = {
         r"(lista|list|ls)\s*(plików|files)?": ("SHELL", "ls", None),
         r"(pokaż|show|cat)\s+(.+)": ("SHELL", "cat", 2),
         # Make patterns (ogólne) - NA KOŃCU
+        r"^(uruchom|run)\s+(testy|test|tests)$": ("MAKE", "test", None),
         r"^(zbuduj|build|make)(\s+(projekt|project|all))?$": ("MAKE", "build", None),
         r"(uruchom|run)\s+cel\s+(\w+)": ("MAKE", "target", 2),
         r"^(wyczyść|clean)$": ("MAKE", "clean", None),
@@ -132,6 +133,8 @@ MULTILANG_ACTION_PATTERNS = {
         r"(liste|list|ls)\s*(dateien|files)?": ("SHELL", "ls", None),
         r"(zeigen|show|cat)\s+(.+)": ("SHELL", "cat", 2),
         # Make patterns
+        r"^(ausführen|run)\s+(tests|test)$": ("MAKE", "test", None),
+        r"^(tests|test)\s+(ausführen|run)$": ("MAKE", "test", None),
         r"^(bauen|build|make)(\s+(projekt|project|all))?$": ("MAKE", "build", None),
         r"(ausführen|run)\s+ziel\s+(\w+)": ("MAKE", "target", 2),
         r"^(säubern|clean)$": ("MAKE", "clean", None),
@@ -161,6 +164,7 @@ MULTILANG_ACTION_PATTERNS = {
         r"(list|ls)\s*(files)?": ("SHELL", "ls", None),
         r"(show|cat)\s+(.+)": ("SHELL", "cat", 2),
         # Make patterns
+        r"^(run)\s+(tests|test)$": ("MAKE", "test", None),
         r"^(build|make)(\s+(project|all))?$": ("MAKE", "build", None),
         r"(run)\s+target\s+(\w+)": ("MAKE", "target", 2),
         r"^(clean)$": ("MAKE", "clean", None),
@@ -418,7 +422,8 @@ class DSLParser:
     
     def _infer_from_keywords(self, normalized: str, raw: str, lang: str = "pl") -> Optional[ParsedCommand]:
         """Próbuje rozpoznać typ komendy po słowach kluczowych"""
-        words = set(normalized.split())
+        words_list = normalized.split()
+        words = set(words_list)
         
         best_match: Optional[Tuple[CommandType, int]] = None
         
@@ -435,7 +440,7 @@ class DSLParser:
                 action="inferred",
                 raw_input=raw,
                 confidence=0.6,
-                args=list(words),
+                args=words_list,
                 detected_language=lang
             )
         

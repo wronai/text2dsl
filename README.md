@@ -293,7 +293,7 @@ make format
 
 ## 📄 Licencja
 
-MIT
+Apache 2
 
 ## 👤 Autor
 

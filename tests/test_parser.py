@@ -31,6 +31,12 @@ class TestDSLParser:
         result = self.parser.parse("testy")
         assert result.type == CommandType.MAKE
         assert result.action == "test"
+
+    def test_parse_make_run_tests_phrase(self):
+        """Test parsowania 'uruchom testy'"""
+        result = self.parser.parse("uruchom testy")
+        assert result.type == CommandType.MAKE
+        assert result.action == "test"
     
     def test_parse_make_clean(self):
         """Test parsowania 'wyczyść'"""
