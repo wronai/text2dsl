@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "text2dsl"
+version = "0.1.0"
+description = "Głosowa nawigacja CLI z kontekstowym wsparciem"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Softreck", email = "info@softreck.dev"}
+]
+keywords = [
+    "cli", "voice", "tts", "stt", "dsl", 
+    "makefile", "docker", "git", "shell"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+voice = [
+    "openai-whisper>=20231117",
+    "pyttsx3>=2.90",
+    "pyaudio>=0.2.13",
+    "edge-tts>=6.1.9",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
+all = [
+    "text2dsl[voice,dev]",
+]
+
+[project.scripts]
+text2dsl = "text2dsl.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/softreck/text2dsl"
+Documentation = "https://github.com/softreck/text2dsl#readme"
+Repository = "https://github.com/softreck/text2dsl"
+Issues = "https://github.com/softreck/text2dsl/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["text2dsl*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
