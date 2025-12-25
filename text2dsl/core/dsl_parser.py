@@ -78,81 +78,97 @@ MULTILANG_KEYWORDS = {
     }
 }
 
-# Wielojęzyczne mapowania akcji
+# Wielojęzyczne mapowania akcji - WAŻNA KOLEJNOŚĆ: bardziej specyficzne wzorce najpierw!
 MULTILANG_ACTION_PATTERNS = {
     "pl": {
-        r"(zbuduj|build|make)\s*(projekt|project|all)?": ("MAKE", "build", None),
-        r"(uruchom|run)\s+cel\s+(\w+)": ("MAKE", "target", 2),
-        r"(wyczyść|clean)": ("MAKE", "clean", None),
-        r"(zainstaluj|install)": ("MAKE", "install", None),
-        r"(testy|test|tests)": ("MAKE", "test", None),
-        r"(uruchom|run|wykonaj|execute)\s+(.+)": ("SHELL", "run", 2),
-        r"(lista|list|ls)\s*(plików|files)?": ("SHELL", "ls", None),
-        r"(pokaż|show|cat)\s+(.+)": ("SHELL", "cat", 2),
-        r"(zatwierdź|commit)\s*(.*)?": ("GIT", "commit", 2),
+        # Python patterns (specyficzne) - PRZED MAKE
+        r"^pip\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 2),
+        r"^pytest": ("PYTHON", "test", None),
+        r"(uruchom|run)\s+(skrypt|script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
+        # Docker patterns (specyficzne) - PRZED MAKE
+        r"(zbuduj|build)\s+(obraz|image)\s+(\w+)": ("DOCKER", "build", 3),
+        r"(uruchom|run)\s+(kontener|container)\s+(\w+)": ("DOCKER", "run", 3),
+        r"(zatrzymaj|stop)\s+(kontener|container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(kontenery|containers|docker ps)": ("DOCKER", "ps", None),
+        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
+        # Git patterns
+        r"(zatwierdź|commit)\s*(.*)": ("GIT", "commit", 2),
         r"(wypchnij|push)": ("GIT", "push", None),
         r"(pobierz|pull|fetch)": ("GIT", "pull", None),
-        r"(status|stan)": ("GIT", "status", None),
-        r"(gałąź|branch)\s+(\w+)?": ("GIT", "branch", 2),
+        r"^(status|stan)$": ("GIT", "status", None),
+        r"(gałąź|branch)\s+(\w+)": ("GIT", "branch", 2),
         r"(przełącz|checkout|switch)\s+(\w+)": ("GIT", "checkout", 2),
-        r"(zbuduj|build)\s+(obraz|image)\s*(\w+)?": ("DOCKER", "build", 3),
-        r"(uruchom|run)\s+(kontener|container)\s*(\w+)?": ("DOCKER", "run", 3),
-        r"(zatrzymaj|stop)\s+(kontener|container)\s*(\w+)?": ("DOCKER", "stop", 3),
-        r"(kontenery|containers|ps)": ("DOCKER", "ps", None),
-        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
-        r"(uruchom|run)\s+(skrypt|script)\s+(.+)": ("PYTHON", "run", 3),
-        r"(pip)\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 3),
-        r"(pytest|testy|tests)": ("PYTHON", "test", None),
+        # Shell patterns
+        r"(lista|list|ls)\s*(plików|files)?": ("SHELL", "ls", None),
+        r"(pokaż|show|cat)\s+(.+)": ("SHELL", "cat", 2),
+        # Make patterns (ogólne) - NA KOŃCU
+        r"^(zbuduj|build|make)(\s+(projekt|project|all))?$": ("MAKE", "build", None),
+        r"(uruchom|run)\s+cel\s+(\w+)": ("MAKE", "target", 2),
+        r"^(wyczyść|clean)$": ("MAKE", "clean", None),
+        r"^(zainstaluj|install)$": ("MAKE", "install", None),
+        r"^(testy|test|tests)$": ("MAKE", "test", None),
     },
     "de": {
-        r"(bauen|build|make)\s*(projekt|project|all)?": ("MAKE", "build", None),
-        r"(ausführen|run)\s+ziel\s+(\w+)": ("MAKE", "target", 2),
-        r"(säubern|clean)": ("MAKE", "clean", None),
-        r"(installieren|install)": ("MAKE", "install", None),
-        r"(tests|test)": ("MAKE", "test", None),
-        r"(ausführen|run|execute)\s+(.+)": ("SHELL", "run", 2),
-        r"(liste|list|ls)\s*(dateien|files)?": ("SHELL", "ls", None),
-        r"(zeigen|show|cat)\s+(.+)": ("SHELL", "cat", 2),
-        r"(bestätigen|commit)\s*(.*)?": ("GIT", "commit", 2),
+        # Python patterns
+        r"^pip\s+(install|uninstall|installieren|deinstallieren)\s+(.+)": ("PYTHON", "pip", 2),
+        r"^pytest": ("PYTHON", "test", None),
+        r"(ausführen|run)\s+(skript|script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
+        # Docker patterns
+        r"(bauen|build)\s+(image|bild)\s+(\w+)": ("DOCKER", "build", 3),
+        r"(starten|run)\s+(container)\s+(\w+)": ("DOCKER", "run", 3),
+        r"(stoppen|stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(container|docker ps)": ("DOCKER", "ps", None),
+        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
+        # Git patterns
+        r"(bestätigen|commit)\s*(.*)": ("GIT", "commit", 2),
         r"(hochladen|push)": ("GIT", "push", None),
         r"(herunterladen|pull|fetch)": ("GIT", "pull", None),
-        r"(status|stand)": ("GIT", "status", None),
-        r"(zweig|branch)\s+(\w+)?": ("GIT", "branch", 2),
+        r"^(status|stand)$": ("GIT", "status", None),
+        r"(zweig|branch)\s+(\w+)": ("GIT", "branch", 2),
         r"(wechseln|checkout|switch)\s+(\w+)": ("GIT", "checkout", 2),
-        r"(bauen|build)\s+(image|bild)\s*(\w+)?": ("DOCKER", "build", 3),
-        r"(starten|run)\s+(container)\s*(\w+)?": ("DOCKER", "run", 3),
-        r"(stoppen|stop)\s+(container)\s*(\w+)?": ("DOCKER", "stop", 3),
-        r"(container|ps)": ("DOCKER", "ps", None),
-        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
-        r"(ausführen|run)\s+(skript|script)\s+(.+)": ("PYTHON", "run", 3),
-        r"(pip)\s+(install|uninstall|installieren|deinstallieren)\s+(.+)": ("PYTHON", "pip", 3),
-        r"(pytest|tests)": ("PYTHON", "test", None),
+        # Shell patterns
+        r"(liste|list|ls)\s*(dateien|files)?": ("SHELL", "ls", None),
+        r"(zeigen|show|cat)\s+(.+)": ("SHELL", "cat", 2),
+        # Make patterns
+        r"^(bauen|build|make)(\s+(projekt|project|all))?$": ("MAKE", "build", None),
+        r"(ausführen|run)\s+ziel\s+(\w+)": ("MAKE", "target", 2),
+        r"^(säubern|clean)$": ("MAKE", "clean", None),
+        r"^(installieren|install)$": ("MAKE", "install", None),
+        r"^(tests|test)$": ("MAKE", "test", None),
     },
     "en": {
-        r"(build|make)\s*(project|all)?": ("MAKE", "build", None),
-        r"(run)\s+target\s+(\w+)": ("MAKE", "target", 2),
-        r"(clean)": ("MAKE", "clean", None),
-        r"(install)": ("MAKE", "install", None),
-        r"(test|tests)": ("MAKE", "test", None),
-        r"(run|execute)\s+(.+)": ("SHELL", "run", 2),
+        # Python patterns
+        r"^pip\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 2),
+        r"^pytest": ("PYTHON", "test", None),
+        r"(run)\s+(script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
+        # Docker patterns
+        r"(build)\s+(image)\s+(\w+)": ("DOCKER", "build", 3),
+        r"(run)\s+(container)\s+(\w+)": ("DOCKER", "run", 3),
+        r"(stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(containers|docker ps)": ("DOCKER", "ps", None),
+        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
+        # Git patterns
+        r"(commit)\s*(.*)": ("GIT", "commit", 2),
+        r"^(push)$": ("GIT", "push", None),
+        r"^(pull|fetch)$": ("GIT", "pull", None),
+        r"^(status)$": ("GIT", "status", None),
+        r"(branch)\s+(\w+)": ("GIT", "branch", 2),
+        r"(checkout|switch)\s+(\w+)": ("GIT", "checkout", 2),
+        # Shell patterns
         r"(list|ls)\s*(files)?": ("SHELL", "ls", None),
         r"(show|cat)\s+(.+)": ("SHELL", "cat", 2),
-        r"(commit)\s*(.*)?": ("GIT", "commit", 2),
-        r"(push)": ("GIT", "push", None),
-        r"(pull|fetch)": ("GIT", "pull", None),
-        r"(status)": ("GIT", "status", None),
-        r"(branch)\s+(\w+)?": ("GIT", "branch", 2),
-        r"(checkout|switch)\s+(\w+)": ("GIT", "checkout", 2),
-        r"(build)\s+(image)\s*(\w+)?": ("DOCKER", "build", 3),
-        r"(run)\s+(container)\s*(\w+)?": ("DOCKER", "run", 3),
-        r"(stop)\s+(container)\s*(\w+)?": ("DOCKER", "stop", 3),
-        r"(containers|ps)": ("DOCKER", "ps", None),
-        r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
-        r"(run)\s+(script)\s+(.+)": ("PYTHON", "run", 3),
-        r"(pip)\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 3),
-        r"(pytest|tests)": ("PYTHON", "test", None),
+        # Make patterns
+        r"^(build|make)(\s+(project|all))?$": ("MAKE", "build", None),
+        r"(run)\s+target\s+(\w+)": ("MAKE", "target", 2),
+        r"^(clean)$": ("MAKE", "clean", None),
+        r"^(install)$": ("MAKE", "install", None),
+        r"^(test|tests)$": ("MAKE", "test", None),
     }
 }
+
 
 # Wielojęzyczne skróty kontekstowe
 MULTILANG_CONTEXT_SHORTCUTS = {
@@ -444,17 +460,17 @@ class DSLParser:
             Lista sugerowanych uzupełnień
         """
         suggestions = []
-        normalized = self._normalize(partial)
+        normalized = self._normalize(partial) if partial else ""
         
         # Sugestie na podstawie historii
         for cmd in reversed(self.command_history[-10:]):
-            if cmd.raw_input.lower().startswith(normalized):
+            if not normalized or cmd.raw_input.lower().startswith(normalized):
                 suggestions.append(cmd.raw_input)
         
-        # Sugestie na podstawie słów kluczowych
-        for keywords in self.KEYWORD_MAPPINGS.values():
+        # Sugestie na podstawie słów kluczowych (używamy self.keywords)
+        for keywords in self.keywords.values():
             for kw in keywords:
-                if kw.startswith(normalized):
+                if not normalized or kw.startswith(normalized):
                     suggestions.append(kw)
         
         return list(dict.fromkeys(suggestions))[:5]  # Unikalne, max 5

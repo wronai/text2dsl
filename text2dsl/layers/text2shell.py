@@ -203,6 +203,10 @@ class Text2Shell:
         
         return unique[:10]
     
+    def get_history(self, n: int = 10) -> List[ShellResult]:
+        """Zwraca ostatnie n komend z historii"""
+        return self.history[-n:]
+    
     def format_result_for_voice(self, result: ShellResult) -> str:
         if result.success:
             if result.output:

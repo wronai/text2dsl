@@ -94,10 +94,10 @@ class TestDSLParser:
     
     def test_parse_docker_build(self):
         """Test parsowania 'zbuduj obraz'"""
-        result = self.parser.parse("zbuduj obraz app")
+        result = self.parser.parse("zbuduj obraz myapp")
         assert result.type == CommandType.DOCKER
         assert result.action == "build"
-        assert result.target == "app"
+        assert result.target == "myapp"
     
     def test_parse_docker_compose(self):
         """Test parsowania 'compose up'"""

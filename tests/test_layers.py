@@ -75,6 +75,8 @@ class TestText2Shell:
         
         history = self.shell.get_history(2)
         assert len(history) == 2
+        assert history[0].command == "echo 1"
+        assert history[1].command == "echo 2"
     
     def test_get_suggestions(self):
         """Test sugestii"""
