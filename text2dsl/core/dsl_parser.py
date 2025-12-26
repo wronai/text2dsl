@@ -15,19 +15,21 @@ import re
 
 class CommandType(Enum):
     """Typy komend rozpoznawane przez parser"""
+
     MAKE = auto()
     SHELL = auto()
     GIT = auto()
     DOCKER = auto()
     PYTHON = auto()
     CONTEXT = auto()  # komendy kontekstowe: dalej, cofnij, powtórz
-    QUERY = auto()    # pytania: co mogę zrobić?, jaki status?
-    COMPOUND = auto() # komendy złożone
+    QUERY = auto()  # pytania: co mogę zrobić?, jaki status?
+    COMPOUND = auto()  # komendy złożone
 
 
 @dataclass
 class ParsedCommand:
     """Sparsowana komenda DSL"""
+
     type: CommandType
     action: str
     target: Optional[str] = None
@@ -35,7 +37,7 @@ class ParsedCommand:
     flags: Dict[str, Any] = field(default_factory=dict)
     raw_input: str = ""
     confidence: float = 1.0
-    alternatives: List['ParsedCommand'] = field(default_factory=list)
+    alternatives: List["ParsedCommand"] = field(default_factory=list)
     detected_language: str = "pl"
 
 
@@ -53,7 +55,16 @@ MULTILANG_KEYWORDS = {
     },
     CommandType.GIT: {
         "pl": ["git", "commit", "push", "pull", "gałąź", "zatwierdź", "wypchnij", "pobierz"],
-        "de": ["git", "commit", "push", "pull", "zweig", "bestätigen", "hochladen", "herunterladen"],
+        "de": [
+            "git",
+            "commit",
+            "push",
+            "pull",
+            "zweig",
+            "bestätigen",
+            "hochladen",
+            "herunterladen",
+        ],
         "en": ["git", "commit", "push", "pull", "branch", "confirm", "upload", "download"],
     },
     CommandType.DOCKER: {
@@ -67,15 +78,35 @@ MULTILANG_KEYWORDS = {
         "en": ["python", "py", "pip", "venv", "pytest", "script", "module"],
     },
     CommandType.CONTEXT: {
-        "pl": ["dalej", "kontynuuj", "cofnij", "wstecz", "powtórz", "jeszcze raz", "anuluj", "tak", "nie"],
-        "de": ["weiter", "fortfahren", "zurück", "rückgängig", "wiederholen", "nochmal", "abbrechen", "ja", "nein"],
+        "pl": [
+            "dalej",
+            "kontynuuj",
+            "cofnij",
+            "wstecz",
+            "powtórz",
+            "jeszcze raz",
+            "anuluj",
+            "tak",
+            "nie",
+        ],
+        "de": [
+            "weiter",
+            "fortfahren",
+            "zurück",
+            "rückgängig",
+            "wiederholen",
+            "nochmal",
+            "abbrechen",
+            "ja",
+            "nein",
+        ],
         "en": ["next", "continue", "back", "undo", "repeat", "again", "cancel", "yes", "no"],
     },
     CommandType.QUERY: {
         "pl": ["co", "jaki", "pomoc", "status", "opcje", "możliwości"],
         "de": ["was", "welche", "hilfe", "status", "optionen", "möglichkeiten"],
         "en": ["what", "which", "help", "status", "options", "possibilities"],
-    }
+    },
 }
 
 # Wielojęzyczne mapowania akcji - WAŻNA KOLEJNOŚĆ: bardziej specyficzne wzorce najpierw!
@@ -170,27 +201,48 @@ MULTILANG_ACTION_PATTERNS = {
         r"^(clean)$": ("MAKE", "clean", None),
         r"^(install)$": ("MAKE", "install", None),
         r"^(test|tests)$": ("MAKE", "test", None),
-    }
+    },
 }
 
 
 # Wielojęzyczne skróty kontekstowe
 MULTILANG_CONTEXT_SHORTCUTS = {
     "pl": {
-        "dalej": "next", "kontynuuj": "next", "cofnij": "undo", "wstecz": "undo",
-        "powtórz": "repeat", "jeszcze raz": "repeat", "anuluj": "cancel",
-        "tak": "confirm", "nie": "deny", "ok": "confirm",
+        "dalej": "next",
+        "kontynuuj": "next",
+        "cofnij": "undo",
+        "wstecz": "undo",
+        "powtórz": "repeat",
+        "jeszcze raz": "repeat",
+        "anuluj": "cancel",
+        "tak": "confirm",
+        "nie": "deny",
+        "ok": "confirm",
     },
     "de": {
-        "weiter": "next", "fortfahren": "next", "zurück": "undo", "rückgängig": "undo",
-        "wiederholen": "repeat", "nochmal": "repeat", "abbrechen": "cancel",
-        "ja": "confirm", "nein": "deny", "ok": "confirm",
+        "weiter": "next",
+        "fortfahren": "next",
+        "zurück": "undo",
+        "rückgängig": "undo",
+        "wiederholen": "repeat",
+        "nochmal": "repeat",
+        "abbrechen": "cancel",
+        "ja": "confirm",
+        "nein": "deny",
+        "ok": "confirm",
     },
     "en": {
-        "next": "next", "continue": "next", "back": "undo", "undo": "undo",
-        "repeat": "repeat", "again": "repeat", "cancel": "cancel",
-        "yes": "confirm", "no": "deny", "ok": "confirm",
-    }
+        "next": "next",
+        "continue": "next",
+        "back": "undo",
+        "undo": "undo",
+        "repeat": "repeat",
+        "again": "repeat",
+        "cancel": "cancel",
+        "yes": "confirm",
+        "no": "deny",
+        "ok": "confirm",
+    },
 }
 
 
@@ -198,77 +250,95 @@ class DSLParser:
     """
     Parser DSL dla głosowej nawigacji CLI
     Obsługuje języki: polski, niemiecki, angielski
-    
+
     Obsługuje:
     - Rozpoznawanie intencji z naturalnego języka (PL/DE/EN)
     - Automatyczne wykrywanie języka
     - Skróty kontekstowe
     - Wieloznaczności i sugestie alternatyw
     """
-    
+
     def __init__(self, language: str = "pl"):
         self.language = language.lower()[:2]
         self.last_command: Optional[ParsedCommand] = None
         self.command_history: List[ParsedCommand] = []
-        
+
         # Pobierz mapowania dla aktualnego języka
         self._update_language_mappings()
-    
+
     def _update_language_mappings(self):
         """Aktualizuje mapowania dla aktualnego języka"""
         self.keywords = {}
         for cmd_type, lang_keywords in MULTILANG_KEYWORDS.items():
             self.keywords[cmd_type] = lang_keywords.get(self.language, lang_keywords.get("en", []))
-        
+
         self.action_patterns = MULTILANG_ACTION_PATTERNS.get(
-            self.language, 
-            MULTILANG_ACTION_PATTERNS["en"]
+            self.language, MULTILANG_ACTION_PATTERNS["en"]
         )
-        
+
         self.context_shortcuts = MULTILANG_CONTEXT_SHORTCUTS.get(
-            self.language,
-            MULTILANG_CONTEXT_SHORTCUTS["en"]
+            self.language, MULTILANG_CONTEXT_SHORTCUTS["en"]
         )
-    
+
     def set_language(self, language: str):
         """Zmienia język parsera"""
         self.language = language.lower()[:2]
         self._update_language_mappings()
-    
+
     def detect_language(self, text: str) -> str:
         """
         Próbuje wykryć język z tekstu
-        
+
         Returns:
             Kod języka (pl, de, en)
         """
         text_lower = text.lower()
-        
+
         # Charakterystyczne słowa dla każdego języka
         lang_indicators = {
-            "pl": ["zbuduj", "uruchom", "pokaż", "wypchnij", "pobierz", "dalej", "cofnij", "tak", "nie"],
-            "de": ["bauen", "ausführen", "zeigen", "hochladen", "herunterladen", "weiter", "zurück", "ja", "nein"],
+            "pl": [
+                "zbuduj",
+                "uruchom",
+                "pokaż",
+                "wypchnij",
+                "pobierz",
+                "dalej",
+                "cofnij",
+                "tak",
+                "nie",
+            ],
+            "de": [
+                "bauen",
+                "ausführen",
+                "zeigen",
+                "hochladen",
+                "herunterladen",
+                "weiter",
+                "zurück",
+                "ja",
+                "nein",
+            ],
             "en": ["build", "run", "show", "push", "pull", "next", "back", "yes", "no"],
         }
-        
+
         scores = {lang: 0 for lang in lang_indicators}
-        
+
         for lang, indicators in lang_indicators.items():
             for word in indicators:
                 if word in text_lower:
                     scores[lang] += 1
-        
+
         best_lang = max(scores, key=scores.get)
         return best_lang if scores[best_lang] > 0 else self.language
-    
+
     def parse(self, input_text: str, auto_detect_lang: bool = False) -> ParsedCommand:
         """
         Główna metoda parsowania tekstu na komendę DSL
-        
+
         Args:
             input_text: Tekst wejściowy (z STT lub wpisany)
             auto_detect_lang: Czy automatycznie wykryć język
-            
+
         Returns:
             ParsedCommand z rozpoznaną intencją
         """
@@ -278,30 +348,30 @@ class DSLParser:
             detected_lang = self.detect_language(input_text)
             if detected_lang != self.language:
                 self.set_language(detected_lang)
-        
+
         # Normalizacja wejścia
         normalized = self._normalize(input_text)
-        
+
         # Sprawdź skróty kontekstowe
         if normalized in self.context_shortcuts:
             return self._handle_context_shortcut(normalized, input_text, detected_lang)
-        
+
         # Sprawdź czy to zapytanie
         if self._is_query(normalized):
             return self._parse_query(normalized, input_text, detected_lang)
-        
+
         # Próbuj dopasować do wzorców
         command = self._match_patterns(normalized, input_text, detected_lang)
         if command:
             self._update_history(command)
             return command
-        
+
         # Próbuj rozpoznać typ po słowach kluczowych
         command = self._infer_from_keywords(normalized, input_text, detected_lang)
         if command:
             self._update_history(command)
             return command
-        
+
         # Nie rozpoznano - zwróć jako shell z niską pewnością
         return ParsedCommand(
             type=CommandType.SHELL,
@@ -309,22 +379,22 @@ class DSLParser:
             raw_input=input_text,
             confidence=0.3,
             args=[normalized],
-            detected_language=detected_lang
+            detected_language=detected_lang,
         )
-    
+
     def _normalize(self, text: str) -> str:
         """Normalizuje tekst wejściowy"""
         text = text.lower().strip()
         # Usuń interpunkcję końcową
-        text = re.sub(r'[.!?]+$', '', text)
+        text = re.sub(r"[.!?]+$", "", text)
         # Zamień wielokrotne spacje na pojedyncze
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
         return text
-    
+
     def _handle_context_shortcut(self, shortcut: str, raw: str, lang: str = "pl") -> ParsedCommand:
         """Obsługuje skróty kontekstowe"""
         action = self.context_shortcuts.get(shortcut, shortcut)
-        
+
         if action == "repeat" and self.last_command:
             # Zwróć kopię ostatniej komendy
             cmd = ParsedCommand(
@@ -335,18 +405,18 @@ class DSLParser:
                 flags=self.last_command.flags.copy(),
                 raw_input=raw,
                 confidence=0.95,
-                detected_language=lang
+                detected_language=lang,
             )
             return cmd
-        
+
         return ParsedCommand(
             type=CommandType.CONTEXT,
             action=action,
             raw_input=raw,
             confidence=1.0,
-            detected_language=lang
+            detected_language=lang,
         )
-    
+
     def _is_query(self, text: str) -> bool:
         """Sprawdza czy tekst jest zapytaniem"""
         # Wielojęzyczne query starters
@@ -355,10 +425,10 @@ class DSLParser:
             "de": ["was ", "welche ", "wie ", "wo ", "hilfe", "?"],
             "en": ["what ", "which ", "how ", "where ", "help", "?"],
         }
-        
+
         starters = query_starters.get(self.language, query_starters["en"])
         return any(text.startswith(q) or text.endswith(q) for q in starters)
-    
+
     def _parse_query(self, normalized: str, raw: str, lang: str = "pl") -> ParsedCommand:
         """Parsuje zapytanie"""
         # Wielojęzyczne słowa kluczowe
@@ -377,11 +447,11 @@ class DSLParser:
             "de": ["hilfe"],
             "en": ["help"],
         }
-        
+
         lang_options = options_words.get(lang, options_words["en"])
         lang_status = status_words.get(lang, status_words["en"])
         lang_help = help_words.get(lang, help_words["en"])
-        
+
         if any(w in normalized for w in lang_options):
             action = "options"
         elif any(w in normalized for w in lang_status):
@@ -390,16 +460,18 @@ class DSLParser:
             action = "help"
         else:
             action = "query"
-        
+
         return ParsedCommand(
             type=CommandType.QUERY,
             action=action,
             raw_input=raw,
             confidence=0.9,
-            detected_language=lang
+            detected_language=lang,
         )
-    
-    def _match_patterns(self, normalized: str, raw: str, lang: str = "pl") -> Optional[ParsedCommand]:
+
+    def _match_patterns(
+        self, normalized: str, raw: str, lang: str = "pl"
+    ) -> Optional[ParsedCommand]:
         """Dopasowuje tekst do zdefiniowanych wzorców"""
         for pattern, (cmd_type, action, target_group) in self.action_patterns.items():
             match = re.search(pattern, normalized, re.IGNORECASE)
@@ -409,31 +481,33 @@ class DSLParser:
                     target = match.group(target_group)
                     if target:
                         target = target.strip()
-                
+
                 return ParsedCommand(
                     type=CommandType[cmd_type],
                     action=action,
                     target=target,
                     raw_input=raw,
                     confidence=0.85,
-                    detected_language=lang
+                    detected_language=lang,
                 )
         return None
-    
-    def _infer_from_keywords(self, normalized: str, raw: str, lang: str = "pl") -> Optional[ParsedCommand]:
+
+    def _infer_from_keywords(
+        self, normalized: str, raw: str, lang: str = "pl"
+    ) -> Optional[ParsedCommand]:
         """Próbuje rozpoznać typ komendy po słowach kluczowych"""
         words_list = normalized.split()
         words = set(words_list)
-        
+
         best_match: Optional[Tuple[CommandType, int]] = None
-        
+
         for cmd_type, keywords in self.keywords.items():
             keyword_set = set(keywords)
             overlap = len(words & keyword_set)
             if overlap > 0:
                 if best_match is None or overlap > best_match[1]:
                     best_match = (cmd_type, overlap)
-        
+
         if best_match:
             return ParsedCommand(
                 type=best_match[0],
@@ -441,11 +515,11 @@ class DSLParser:
                 raw_input=raw,
                 confidence=0.6,
                 args=words_list,
-                detected_language=lang
+                detected_language=lang,
             )
-        
+
         return None
-    
+
     def _update_history(self, command: ParsedCommand):
         """Aktualizuje historię komend"""
         self.last_command = command
@@ -453,29 +527,29 @@ class DSLParser:
         # Ogranicz historię do 50 elementów
         if len(self.command_history) > 50:
             self.command_history = self.command_history[-50:]
-    
+
     def get_suggestions(self, partial: str) -> List[str]:
         """
         Zwraca sugestie dla częściowego wejścia
-        
+
         Args:
             partial: Częściowy tekst komendy
-            
+
         Returns:
             Lista sugerowanych uzupełnień
         """
         suggestions = []
         normalized = self._normalize(partial) if partial else ""
-        
+
         # Sugestie na podstawie historii
         for cmd in reversed(self.command_history[-10:]):
             if not normalized or cmd.raw_input.lower().startswith(normalized):
                 suggestions.append(cmd.raw_input)
-        
+
         # Sugestie na podstawie słów kluczowych (używamy self.keywords)
         for keywords in self.keywords.values():
             for kw in keywords:
                 if not normalized or kw.startswith(normalized):
                     suggestions.append(kw)
-        
+
         return list(dict.fromkeys(suggestions))[:5]  # Unikalne, max 5

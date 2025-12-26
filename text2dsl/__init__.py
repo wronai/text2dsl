@@ -15,8 +15,8 @@ from .core.context_manager import ContextManager
 from .core.suggestion_engine import SuggestionEngine
 
 from .layers.voice_layer import (
-    VoiceLayer, 
-    VoiceConfig, 
+    VoiceLayer,
+    VoiceConfig,
     VoiceBackend,
     Language,
     LanguageConfig,
@@ -36,7 +36,7 @@ from .utils.archive import ArchiveManager, ExportResult, create_project_archive
 __all__ = [
     # Core
     "DSLParser",
-    "ContextManager", 
+    "ContextManager",
     "SuggestionEngine",
     # Voice
     "VoiceLayer",

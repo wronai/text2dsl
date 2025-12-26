@@ -6,7 +6,7 @@ from .suggestion_engine import SuggestionEngine, Suggestion
 
 __all__ = [
     "DSLParser",
-    "ParsedCommand", 
+    "ParsedCommand",
     "CommandType",
     "ContextManager",
     "ProjectContext",

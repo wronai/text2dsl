@@ -9,7 +9,7 @@ from .text2python import Text2Python, PythonResult
 
 __all__ = [
     "VoiceLayer",
-    "VoiceConfig", 
+    "VoiceConfig",
     "VoiceBackend",
     "MockVoiceLayer",
     "Text2Make",
