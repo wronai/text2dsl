@@ -118,6 +118,19 @@ Obsługiwane języki:
     )
     
     args = parser.parse_args()
+
+    from .utils.env import load_env_file, get_env_bool, get_env_str
+
+    working_dir = args.directory or "."
+    load_env_file(Path(working_dir) / ".env", override=False)
+
+    if "--verbose" not in sys.argv:
+        args.verbose = args.verbose or get_env_bool("TEXT2DSL_VERBOSE", default=False)
+
+    if not any(flag in sys.argv for flag in ["--lang", "--language", "-l"]):
+        env_lang = get_env_str("TEXT2DSL_LANG") or get_env_str("TEXT2DSL_LANGUAGE")
+        if env_lang in ["pl", "de", "en"]:
+            args.lang = env_lang
     
     # Import głównych komponentów
     from .orchestrator import Text2DSLOrchestrator, OrchestratorConfig
