@@ -14,7 +14,7 @@ def load_env_file(path: Union[str, Path], override: bool = False) -> bool:
             continue
 
         if line.startswith("export "):
-            line = line[len("export ") :].strip()
+            line = line[len("export "):].strip()
 
         if "=" not in line:
             continue
@@ -26,7 +26,9 @@ def load_env_file(path: Union[str, Path], override: bool = False) -> bool:
         if not key:
             continue
 
-        if len(value) >= 2 and ((value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")):
+        if len(value) >= 2 and (
+            (value[0] == value[-1] == '"') or (value[0] == value[-1] == "'")
+        ):
             value = value[1:-1]
 
         if not override and key in os.environ:

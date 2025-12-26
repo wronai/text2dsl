@@ -1,4 +1,4 @@
-.PHONY: all build test clean install lint format docs run dist upload upload-test publish publish-test
+.PHONY: all build test test-cov clean install install-voice lint format docs run voice stop dist upload upload-test publish publish-test help
 
 # Default target
 all: build test
@@ -30,6 +30,7 @@ clean:
 # Install all dependencies
 install:
 	pip install -e ".[all]"
+	@if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; fi
 
 # Install only voice dependencies
 install-voice:
@@ -56,6 +57,13 @@ run:
 voice:
 	python -m text2dsl --voice
 
+stop:
+	@if [ -f .text2dsl.pid ]; then \
+		pid=$$(cat .text2dsl.pid); \
+		if kill -0 $$pid 2>/dev/null; then kill $$pid; fi; \
+		rm -f .text2dsl.pid; \
+	fi
+
 # Create distribution package
 dist:
 	python -m build
@@ -81,6 +89,7 @@ help:
 	@echo "  test-cov     - Run tests with coverage"
 	@echo "  clean        - Clean build artifacts"
 	@echo "  install      - Install all dependencies"
+	@echo "  stop         - Stop running voice session (uses .text2dsl.pid)"
 	@echo "  lint         - Run linters"
 	@echo "  format       - Format code"
 	@echo "  run          - Run interactive mode"

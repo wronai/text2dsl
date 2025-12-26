@@ -170,6 +170,45 @@ class Text2DSLOrchestrator:
         payload = "" if not data else f" {data}"
         print(f"[text2dsl][debug] {event}{payload}")
 
+    def _preview_text(self, text: Optional[str], limit: int = 500) -> str:
+        if not text:
+            return ""
+        t = text.strip("\n")
+        if len(t) <= limit:
+            return t
+        return t[:limit] + "..."
+
+    def _with_trace(self, message: str, command: ParsedCommand, exec_cmd: str, result: Any) -> str:
+        limit = 800 if self.config.verbose else 200
+
+        lines: List[str] = [message, ""]
+        lines.append(
+            "TRACE: "
+            f"DSL={command.type.name} action={command.action} target={command.target} "
+            f"args={command.args} confidence={command.confidence:.2f}"
+        )
+        lines.append(f"TRACE: ROUTE={command.type.name}")
+        lines.append(f"TRACE: EXEC={exec_cmd}")
+
+        success = getattr(result, "success", None)
+        if success is not None:
+            lines.append(f"TRACE: SUCCESS={success}")
+
+        return_code = getattr(result, "return_code", None)
+        if return_code is not None:
+            lines.append(f"TRACE: EXIT={return_code}")
+
+        out_preview = self._preview_text(getattr(result, "output", ""), limit=limit)
+        err_preview = self._preview_text(getattr(result, "error", ""), limit=limit)
+        if out_preview:
+            lines.append("TRACE: STDOUT:")
+            lines.append(out_preview)
+        if err_preview:
+            lines.append("TRACE: STDERR:")
+            lines.append(err_preview)
+
+        return "\n".join(lines)
+
     def _handle_context_command(self, command: ParsedCommand) -> ExecutionResponse:
         """Obsługuje komendy kontekstowe (dalej, cofnij, powtórz)"""
         action = command.action
@@ -335,6 +374,9 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         else:
             message = f"Make {target or 'default'}: błąd\n{result.error[:200]}"
 
+        exec_cmd = f"make {target}".strip() if target else "make"
+        message = self._with_trace(message, command, exec_cmd, result)
+
         return ExecutionResponse(success=result.success, message=message, result=result)
 
     def _execute_shell(self, command: ParsedCommand) -> ExecutionResponse:
@@ -376,6 +418,8 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         else:
             message = f"Błąd: {result.error[:200]}"
 
+        message = self._with_trace(message, command, shell_cmd, result)
+
         return ExecutionResponse(success=result.success, message=message, result=result)
 
     def _execute_git(self, command: ParsedCommand) -> ExecutionResponse:
@@ -403,6 +447,9 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         else:
             message = f"Błąd: {result.error[:200]}"
 
+        exec_cmd = f"git {result.operation}".strip()
+        message = self._with_trace(message, command, exec_cmd, result)
+
         return ExecutionResponse(success=result.success, message=message, result=result)
 
     def _execute_docker(self, command: ParsedCommand) -> ExecutionResponse:
@@ -425,6 +472,9 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
         else:
             message = f"Błąd: {result.error[:200]}"
 
+        exec_cmd = f"docker {result.operation}".strip()
+        message = self._with_trace(message, command, exec_cmd, result)
+
         return ExecutionResponse(success=result.success, message=message, result=result)
 
     def _execute_python(self, command: ParsedCommand) -> ExecutionResponse:
@@ -441,6 +491,9 @@ Kontekstowe: dalej, cofnij, powtórz, tak, nie
             message = result.output[:500] if result.output else "OK"
         else:
             message = f"Błąd: {result.error[:200]}"
+
+        exec_cmd = f"python {result.operation}".strip()
+        message = self._with_trace(message, command, exec_cmd, result)
 
         return ExecutionResponse(success=result.success, message=message, result=result)
 

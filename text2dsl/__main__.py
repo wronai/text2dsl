@@ -12,6 +12,8 @@ Użycie:
 """
 
 import argparse
+import atexit
+import os
 import sys
 from pathlib import Path
 
@@ -84,11 +86,26 @@ Obsługiwane języki:
 
     from .utils.env import load_env_file, get_env_bool, get_env_str
 
-    working_dir = args.directory or "."
-    load_env_file(Path(working_dir) / ".env", override=False)
+    base_dir = Path(args.directory or ".")
+    load_env_file(base_dir / ".env", override=False)
+
+    if not any(flag in sys.argv for flag in ["--directory", "-d"]):
+        env_dir = get_env_str("TEXT2DSL_DIR") or get_env_str("TEXT2DSL_DIRECTORY")
+        if env_dir:
+            args.directory = env_dir
+            load_env_file(Path(env_dir) / ".env", override=False)
 
     if "--verbose" not in sys.argv:
         args.verbose = args.verbose or get_env_bool("TEXT2DSL_VERBOSE", default=False)
+
+    if not any(flag in sys.argv for flag in ["--quiet", "-q"]):
+        args.quiet = args.quiet or get_env_bool("TEXT2DSL_QUIET", default=False)
+
+    if "--no-suggestions" not in sys.argv:
+        args.no_suggestions = args.no_suggestions or get_env_bool("TEXT2DSL_NO_SUGGESTIONS", default=False)
+
+    if not any(flag in sys.argv for flag in ["--voice", "-v"]):
+        args.voice = args.voice or get_env_bool("TEXT2DSL_VOICE", default=False)
 
     if not any(flag in sys.argv for flag in ["--lang", "--language", "-l"]):
         env_lang = get_env_str("TEXT2DSL_LANG") or get_env_str("TEXT2DSL_LANGUAGE")
@@ -185,6 +202,20 @@ Obsługiwane języki:
 
     # Tryb głosowy
     if args.voice:
+        pid_path = Path(args.directory or ".") / ".text2dsl.pid"
+        try:
+            pid_path.write_text(str(os.getpid()), encoding="utf-8")
+        except Exception:
+            pid_path = None
+
+        if pid_path:
+            def _cleanup_pid_file():
+                try:
+                    pid_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
+            atexit.register(_cleanup_pid_file)
         try:
             # Powitanie w odpowiednim języku
             welcome = lang_config.messages.get("welcome", "Welcome!")

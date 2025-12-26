@@ -138,6 +138,7 @@ celerybeat.pid
 # Environments
 .env
 .envrc
+.text2dsl.pid
 .venv
 env/
 venv/
