@@ -17,6 +17,10 @@ import os
 import sys
 from pathlib import Path
 
+CONSTANT_3 = 3
+CONSTANT_50 = 50
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -144,10 +148,10 @@ Obsługiwane języki:
         files = manager.list_files()
 
         print(f"Pliki w projekcie ({len(files)}):")
-        for f in files[:50]:
+        for f in files[:CONSTANT_50]:
             print(f"  {f}")
-        if len(files) > 50:
-            print(f"  ... i {len(files) - 50} więcej")
+        if len(files) > CONSTANT_50:
+            print(f"  ... i {len(files) - CONSTANT_50} więcej")
 
         print(f"\nRozmiar: {manager.format_size(manager.get_project_size())}")
         return 0
@@ -195,7 +199,7 @@ Obsługiwane języki:
             # Wielojęzyczne etykiety
             labels = {"pl": "Sugestie", "de": "Vorschläge", "en": "Suggestions"}
             print(f"\n{labels.get(args.lang, 'Suggestions')}:")
-            for s in response.suggestions[:3]:
+            for s in response.suggestions[:CONSTANT_3]:
                 print(f"  - {s.text}")
 
         return 0 if response.success else 1

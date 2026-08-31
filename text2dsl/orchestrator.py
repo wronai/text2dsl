@@ -10,9 +10,7 @@ Text2DSL Orchestrator - Główny koordynator warstw
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Callable, Union
-from pathlib import Path
-import threading
+from typing import Optional, Dict, Any, List, Callable
 import queue
 import time
 
@@ -28,13 +26,20 @@ from .core import (
 from .layers import (
     VoiceLayer,
     VoiceConfig,
-    MockVoiceLayer,
     Text2Make,
     Text2Shell,
     Text2Git,
     Text2Docker,
     Text2Python,
 )
+
+CONSTANT_3 = 3
+CONSTANT_5 = 5
+CONSTANT_50 = 50
+CONSTANT_200 = 200
+CONSTANT_500 = 500
+CONSTANT_800 = 800
+
 
 
 @dataclass

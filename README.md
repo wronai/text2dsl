@@ -2,6 +2,22 @@
 
 **Głosowa nawigacja CLI z kontekstowym wsparciem**
 
+[![PyPI](https://img.shields.io/pypi/v/text2dsl)](https://pypi.org/project/text2dsl/)
+[![Python](https://img.shields.io/pypi/pyversions/text2dsl)](https://pypi.org/project/text2dsl/)
+[![License](https://img.shields.io/pypi/l/text2dsl)](LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/text2dsl)](https://pypi.org/project/text2dsl/)
+[![GitHub stars](https://img.shields.io/github/stars/wronai/text2dsl?style=social)](https://github.com/wronai/text2dsl/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/wronai/text2dsl?style=social)](https://github.com/wronai/text2dsl/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/wronai/text2dsl)](https://github.com/wronai/text2dsl/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/wronai/text2dsl)](https://github.com/wronai/text2dsl/pulls)
+[![Tests](https://img.shields.io/github/actions/workflow/status/wronai/text2dsl/test.yml?label=tests)](https://github.com/wronai/text2dsl/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Type checking: mypy](https://img.shields.io/badge/type%20checking-mypy-blue.svg)](http://mypy-lang.org/)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey)](https://github.com/wronai/text2dsl)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue)](https://pypi.org/project/text2dsl/)
+[![Dependencies](https://img.shields.io/badge/dependencies-azure%20%7C%20openai-blue)](https://github.com/wronai/text2dsl)
+[![Languages](https://img.shields.io/badge/languages-pl%20%7C%20de%20%7C%20en-blue)](https://github.com/wronai/text2dsl)
+
 Framework do głosowej i tekstowej interakcji z narzędziami deweloperskimi (make, shell, git, docker, python) poprzez warstwę DSL z inteligentnymi sugestiami.
 
 ## 🌍 Obsługiwane języki

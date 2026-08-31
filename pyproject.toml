@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "text2dsl"
 version = "0.2.1"
-description = "Głosowa nawigacja CLI z kontekstowym wsparciem"
+description = "text2dsl - Multi-language voice and text interaction framework for developer tools (Make, Git, Docker) using a DSL layer with context-aware suggestions and LLM support."
 readme = "README.md"
-license = {text = "MIT"}
+license = "Apache-2.0"
 authors = [
-    {name = "Softreck", email = "info@softreck.dev"}
+    {name = "Softreck", email = "tom@sapletta.com"}
 ]
 keywords = [
     "cli", "voice", "tts", "stt", "dsl", 
@@ -18,14 +18,7 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Build Tools",
-    "Topic :: Utilities",
+    "License :: OSI Approved :: Apache Software License",
 ]
 requires-python = ">=3.9"
 dependencies = []

@@ -12,6 +12,11 @@ from typing import List, Optional, Dict, Any, Tuple
 from enum import Enum, auto
 import re
 
+CONSTANT_3 = 3
+MAX_5 = 5
+CONSTANT_50 = 50
+
+
 
 class CommandType(Enum):
     """Typy komend rozpoznawane przez parser"""
@@ -115,12 +120,12 @@ MULTILANG_ACTION_PATTERNS = {
         # Python patterns (specyficzne) - PRZED MAKE
         r"^pip\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 2),
         r"^pytest": ("PYTHON", "test", None),
-        r"(uruchom|run)\s+(skrypt|script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(uruchom|run)\s+(skrypt|script)\s+(.+)": ("PYTHON", "run", CONSTANT_3),
         r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
         # Docker patterns (specyficzne) - PRZED MAKE
-        r"(zbuduj|build)\s+(obraz|image)\s+(\w+)": ("DOCKER", "build", 3),
-        r"(uruchom|run)\s+(kontener|container)\s+(\w+)": ("DOCKER", "run", 3),
-        r"(zatrzymaj|stop)\s+(kontener|container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(zbuduj|build)\s+(obraz|image)\s+(\w+)": ("DOCKER", "build", CONSTANT_3),
+        r"(uruchom|run)\s+(kontener|container)\s+(\w+)": ("DOCKER", "run", CONSTANT_3),
+        r"(zatrzymaj|stop)\s+(kontener|container)\s+(\w+)": ("DOCKER", "stop", CONSTANT_3),
         r"(kontenery|containers|docker ps)": ("DOCKER", "ps", None),
         r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
         # Git patterns
@@ -145,12 +150,12 @@ MULTILANG_ACTION_PATTERNS = {
         # Python patterns
         r"^pip\s+(install|uninstall|installieren|deinstallieren)\s+(.+)": ("PYTHON", "pip", 2),
         r"^pytest": ("PYTHON", "test", None),
-        r"(ausführen|run)\s+(skript|script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(ausführen|run)\s+(skript|script)\s+(.+)": ("PYTHON", "run", CONSTANT_3),
         r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
         # Docker patterns
-        r"(bauen|build)\s+(image|bild)\s+(\w+)": ("DOCKER", "build", 3),
-        r"(starten|run)\s+(container)\s+(\w+)": ("DOCKER", "run", 3),
-        r"(stoppen|stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(bauen|build)\s+(image|bild)\s+(\w+)": ("DOCKER", "build", CONSTANT_3),
+        r"(starten|run)\s+(container)\s+(\w+)": ("DOCKER", "run", CONSTANT_3),
+        r"(stoppen|stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", CONSTANT_3),
         r"(container|docker ps)": ("DOCKER", "ps", None),
         r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
         # Git patterns
@@ -176,12 +181,12 @@ MULTILANG_ACTION_PATTERNS = {
         # Python patterns
         r"^pip\s+(install|uninstall)\s+(.+)": ("PYTHON", "pip", 2),
         r"^pytest": ("PYTHON", "test", None),
-        r"(run)\s+(script)\s+(.+)": ("PYTHON", "run", 3),
+        r"(run)\s+(script)\s+(.+)": ("PYTHON", "run", CONSTANT_3),
         r"(python|py)\s+(.+)": ("PYTHON", "run", 2),
         # Docker patterns
-        r"(build)\s+(image)\s+(\w+)": ("DOCKER", "build", 3),
-        r"(run)\s+(container)\s+(\w+)": ("DOCKER", "run", 3),
-        r"(stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", 3),
+        r"(build)\s+(image)\s+(\w+)": ("DOCKER", "build", CONSTANT_3),
+        r"(run)\s+(container)\s+(\w+)": ("DOCKER", "run", CONSTANT_3),
+        r"(stop)\s+(container)\s+(\w+)": ("DOCKER", "stop", CONSTANT_3),
         r"(containers|docker ps)": ("DOCKER", "ps", None),
         r"(compose)\s+(up|down|restart)": ("DOCKER", "compose", 2),
         # Git patterns
@@ -525,8 +530,8 @@ class DSLParser:
         self.last_command = command
         self.command_history.append(command)
         # Ogranicz historię do 50 elementów
-        if len(self.command_history) > 50:
-            self.command_history = self.command_history[-50:]
+        if len(self.command_history) > CONSTANT_50:
+            self.command_history = self.command_history[-CONSTANT_50:]
 
     def get_suggestions(self, partial: str) -> List[str]:
         """
@@ -552,4 +557,4 @@ class DSLParser:
                 if not normalized or kw.startswith(normalized):
                     suggestions.append(kw)
 
-        return list(dict.fromkeys(suggestions))[:5]  # Unikalne, max 5
+        return list(dict.fromkeys(suggestions))[:MAX_5]  # Unikalne, max MAX_5

@@ -11,7 +11,7 @@ Obsługuje:
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, Callable, List, Dict, Any, Generator
+from typing import Optional, Callable, List, Dict
 from enum import Enum, auto
 import threading
 import queue
@@ -19,6 +19,12 @@ import time
 import os
 import contextlib
 import io
+
+TIMEOUT_5 = 5.0
+MIN_150 = 150
+BUFFER_SIZE = 1024
+CONSTANT_16000 = 16000
+
 
 
 class VoiceBackend(Enum):
@@ -162,10 +168,10 @@ class VoiceConfig:
     tts_backend: VoiceBackend = VoiceBackend.EDGE_TTS
     language: str = "pl"
     debug: bool = False
-    sample_rate: int = 16000
+    sample_rate: int = CONSTANT_16000
     wake_word: Optional[str] = None  # np. "hej asystent"
     voice_name: Optional[str] = None
-    speech_rate: int = 150  # słów na minutę
+    speech_rate: int = MIN_150  # słów na minutę
     volume: float = 1.0
     silence_threshold: float = 0.03
     silence_duration: float = 1.0  # sekundy ciszy = koniec mowy
@@ -340,14 +346,14 @@ class WhisperSTT(STTProvider):
                 channels=1,
                 rate=self.config.sample_rate,
                 input=True,
-                frames_per_buffer=1024,
+                frames_per_buffer=BUFFER_SIZE,
             )
 
             audio_buffer = []
             silence_frames = 0
 
             while self._streaming:
-                data = stream.read(1024, exception_on_overflow=False)
+                data = stream.read(BUFFER_SIZE, exception_on_overflow=False)
                 audio_np = np.frombuffer(data, dtype=np.float32)
 
                 # Wykryj ciszę
@@ -359,7 +365,7 @@ class WhisperSTT(STTProvider):
                     audio_buffer.append(data)
 
                 # Po ciszy - przetwórz bufor
-                silence_limit = int(self.config.silence_duration * self.config.sample_rate / 1024)
+                silence_limit = int(self.config.silence_duration * self.config.sample_rate / BUFFER_SIZE)
                 if silence_frames > silence_limit and audio_buffer:
                     # Konwertuj i transkrybuj
                     audio_bytes = b"".join(audio_buffer)
@@ -663,7 +669,7 @@ class VoiceLayer:
         message = self.get_message(key)
         self.speak(message, wait)
 
-    def listen(self, timeout: float = 5.0) -> Optional[str]:
+    def listen(self, timeout: float = TIMEOUT_5) -> Optional[str]:
         """
         Nasłuchuje i zwraca transkrypcję
 
@@ -783,7 +789,7 @@ class MockVoiceLayer(VoiceLayer):
         """Zapisuje tekst zamiast mówić"""
         self.spoken_texts.append(text)
 
-    def listen(self, timeout: float = 5.0) -> Optional[str]:
+    def listen(self, timeout: float = TIMEOUT_5) -> Optional[str]:
         """Zwraca tekst z kolejki mock"""
         try:
             return self.mock_input_queue.get(timeout=timeout)

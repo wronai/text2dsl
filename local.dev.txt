@@ -1,0 +1,8 @@
+# local.dev.txt — locally developed dependencies of this project (generated 2026-07-04)
+# by ~/github/local.dev.sh — DO NOT EDIT; see ~/github/local.dev.md
+# project: text2dsl 0.2.1 (python) at /home/tom/github/wronai/text2dsl
+# deps declared: 12 | with local source: 0
+
+## LOCAL DEPS: none — all dependencies are external
+
+## EXTERNAL DEPS (no local source, 11): black, build, edge-tts, flake8, mypy, openai-whisper, pyaudio, pytest, pytest-cov, pyttsx3, twine
